@@ -9,10 +9,12 @@ import matplotlib
 import numpy as np
 import pandas as pd
 from gym import spaces
-from stable_baselines3.common import logger
+from stable_baselines3.common.logger import Logger 
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
+
+logger = Logger()
 matplotlib.use("Agg")
 
 
