@@ -9,12 +9,12 @@ import matplotlib
 import numpy as np
 import pandas as pd
 from gym import spaces
-from stable_baselines3.common.logger import Logger 
+from stable_baselines3.common.logger import Logger, make_output_format
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
 
-logger = Logger()
+logger = Logger("logs", output_formats=[make_output_format("csv", "logs")])
 matplotlib.use("Agg")
 
 
