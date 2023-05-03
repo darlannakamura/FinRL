@@ -214,9 +214,9 @@ class PaperTradingAlpaca:
 
         if self.drl_lib == "elegantrl":
             with torch.no_grad():
-                s_tensor = torch.as_tensor((state,), device=self.device)
+                s_tensor = torch.as_tensor(state, dtype=torch.float32, device=self.device)
                 a_tensor = self.act(s_tensor)
-                action = a_tensor.detach().cpu().numpy()[0]
+                action = a_tensor.detach().cpu().numpy()
             action = (action * self.max_stock).astype(int)
 
         elif self.drl_lib == "rllib":
@@ -341,8 +341,9 @@ class PaperTradingAlpaca:
         ).astype(np.float32)
         state[np.isnan(state)] = 0.0
         state[np.isinf(state)] = 0.0
+
         # print(len(self.stockUniverse))
-        return state
+        return np.hstack([cash, stocks, price])
 
     def submitOrder(self, qty, stock, side, resp):
         if qty > 0:

@@ -61,6 +61,10 @@ class StockTradingEnv(gym.Env):
         # self.state_dim = 1 + 2 + 2 * stock_dim + self.tech_ary.shape[1]
         # # amount + (turbulence, turbulence_bool) + (price, stock) * stock_dim + tech_dim
         self.state_dim = 1 + 2 + 3 * stock_dim + self.tech_ary.shape[1]
+
+        # state_dim -> why 1 + 2 ?
+        # 3 * stock_dim because we can hold, buy or sell any stocks and the technical indicators can have influence on this
+
         # amount + (turbulence, turbulence_bool) + (price, stock) * stock_dim + tech_dim
         self.stocks_cd = None
         self.action_dim = stock_dim

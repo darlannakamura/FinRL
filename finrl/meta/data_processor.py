@@ -64,7 +64,7 @@ class DataProcessor:
         return df
 
     def df_to_array(self, df, if_vix) -> np.array:
-        price_array, tech_array, turbulence_array = self.processor.df_to_array(
+        price_array, tech_array, turbulence_array, ohlcv_array = self.processor.df_to_array(
             df, self.tech_indicator_list, if_vix
         )
         # fill nan and inf values with 0 for technical indicators
@@ -72,5 +72,7 @@ class DataProcessor:
         tech_array[tech_nan_positions] = 0
         tech_inf_positions = np.isinf(tech_array)
         tech_array[tech_inf_positions] = 0
+        ohlcv_nan_positions = np.isinf(ohlcv_array)
+        ohlcv_array[ohlcv_nan_positions] = 0
 
-        return price_array, tech_array, turbulence_array
+        return price_array, tech_array, turbulence_array, ohlcv_array

@@ -278,6 +278,7 @@ class AlpacaProcessor:
             if if_first_time:
                 price_array = df[df.tic == tic][["close"]].values
                 tech_array = df[df.tic == tic][tech_indicator_list].values
+                ohlcv_array = df[df.tic == tic][["open", "high", "low", "close", "volume"]].values
                 if if_vix:
                     turbulence_array = df[df.tic == tic]["VIXY"].values
                 else:
@@ -290,8 +291,11 @@ class AlpacaProcessor:
                 tech_array = np.hstack(
                     [tech_array, df[df.tic == tic][tech_indicator_list].values]
                 )
+                ohlcv_array = np.hstack(
+                    [ohlcv_array, df[df.tic == tic][["open", "high", "low", "close", "volume"]].values]
+                )
         #        print("Successfully transformed into array")
-        return price_array, tech_array, turbulence_array
+        return price_array, tech_array, turbulence_array, ohlcv_array
 
     def get_trading_days(self, start, end):
         nyse = tc.get_calendar("NYSE")
@@ -384,7 +388,7 @@ class AlpacaProcessor:
         df = self.add_technical_indicator(new_df, tech_indicator_list)
         df["VIXY"] = 0
 
-        price_array, tech_array, turbulence_array = self.df_to_array(
+        price_array, tech_array, turbulence_array, ohclv_array = self.df_to_array(
             df, tech_indicator_list, if_vix=True
         )
         latest_price = price_array[-1]

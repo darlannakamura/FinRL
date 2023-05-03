@@ -32,6 +32,9 @@ from finrl.plot import get_daily_return
 class ActorPPO(nn.Module):
     def __init__(self, dims: [int], state_dim: int, action_dim: int):
         super().__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.dims = dims
         self.net = build_mlp(dims=[state_dim, *dims, action_dim])
         self.action_std_log = nn.Parameter(
             torch.zeros((1, action_dim)), requires_grad=True
@@ -304,6 +307,7 @@ class AgentPPO(AgentBase):
         self.states[0] = ary_state
         rewards = (rewards * self.reward_scale).unsqueeze(1)
         undones = (1 - dones.type(torch.float32)).unsqueeze(1)
+
         return states, actions, logprobs, rewards, undones
 
     def update_net(self, buffer) -> [float]:
@@ -415,9 +419,11 @@ def train_agent(args: Config):
     args.init_before_training()
 
     env = build_env(args.env_class, args.env_args)
+        
     agent = args.agent_class(
         args.net_dims, args.state_dim, args.action_dim, gpu_id=args.gpu_id, args=args
     )
+
     agent.states = env.reset()[np.newaxis, :]
 
     evaluator = Evaluator(
@@ -581,17 +587,19 @@ class DRLAgent:
             make a prediction in a test dataset and get results
     """
 
-    def __init__(self, env, price_array, tech_array, turbulence_array):
+    def __init__(self, env, price_array, tech_array, turbulence_array, ohlcv_array):
         self.env = env
         self.price_array = price_array
         self.tech_array = tech_array
         self.turbulence_array = turbulence_array
+        self.ohlcv_array = ohlcv_array
 
     def get_model(self, model_name, model_kwargs):
         env_config = {
             "price_array": self.price_array,
             "tech_array": self.tech_array,
             "turbulence_array": self.turbulence_array,
+            "ohlcv_array": self.ohlcv_array,
             "if_train": True,
         }
         environment = self.env(config=env_config)
@@ -657,7 +665,7 @@ class DRLAgent:
         episode_total_assets = [environment.initial_total_asset]
         with _torch.no_grad():
             for i in range(environment.max_step):
-                s_tensor = _torch.as_tensor((state,), device=device)
+                s_tensor = _torch.as_tensor(state, dtype=torch.float32, device=device)
                 a_tensor = act(s_tensor)  # action_tanh = act.forward()
                 action = (
                     a_tensor.detach().cpu().numpy()[0]
@@ -711,17 +719,29 @@ def train(
 ):
     # download data
     dp = DataProcessor(data_source, **kwargs)
-    data = dp.download_data(ticker_list, start_date, end_date, time_interval)
-    data = dp.clean_data(data)
-    data = dp.add_technical_indicator(data, technical_indicator_list)
-    if if_vix:
-        data = dp.add_vix(data)
-    else:
-        data = dp.add_turbulence(data)
-    price_array, tech_array, turbulence_array = dp.df_to_array(data, if_vix)
+    # data = dp.download_data(ticker_list, start_date, end_date, time_interval)
+    # data = dp.clean_data(data)
+    # data = dp.add_technical_indicator(data, technical_indicator_list)
+    # if if_vix:
+    #     data = dp.add_vix(data)
+    # else:
+    #     data = dp.add_turbulence(data)
+
+    data = pd.read_csv('data.csv')
+
+    dp.tech_indicator_list = technical_indicator_list
+
+    price_array, tech_array, turbulence_array, ohlcv_array = dp.df_to_array(data, if_vix)
+
+    # price_array.shape = (rows, tics)
+    # tech_array.shape = (rows, (tics * tech_indicators))
+    # turbulence_array.shape (rows,)
+    # ohlcv_array.shape = (rows, (tics * 5)) 5 = (ohlcv)
+
     env_config = {
         "price_array": price_array,
         "tech_array": tech_array,
+        "ohlcv_array": ohlcv_array,
         "turbulence_array": turbulence_array,
         "if_train": True,
     }
@@ -739,8 +759,14 @@ def train(
             price_array=price_array,
             tech_array=tech_array,
             turbulence_array=turbulence_array,
+            ohlcv_array=ohlcv_array,
         )
+
+        # agent is DRLAgent
+
         model = agent.get_model(model_name, model_kwargs=erl_params)
+
+        # model is actually Config
         trained_model = agent.train_model(
             model=model, cwd=cwd, total_timesteps=break_step
         )
@@ -781,12 +807,13 @@ def test(
         data = dp.add_vix(data)
     else:
         data = dp.add_turbulence(data)
-    price_array, tech_array, turbulence_array = dp.df_to_array(data, if_vix)
+    price_array, tech_array, turbulence_array, ohlcv_array = dp.df_to_array(data, if_vix)
 
     env_config = {
         "price_array": price_array,
         "tech_array": tech_array,
         "turbulence_array": turbulence_array,
+        "ohlcv_array": ohlcv_array,
         "if_train": False,
     }
     env_instance = env(config=env_config)
