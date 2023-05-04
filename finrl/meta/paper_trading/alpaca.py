@@ -312,7 +312,7 @@ class PaperTradingAlpaca:
             self.sigmoid_sign(turbulence, self.turbulence_thresh) * 2**-5
         ).astype(np.float32)
 
-        tech = tech * 2**-7
+        # tech = tech * 2**-7
         positions = self.alpaca.list_positions()
         stocks = [0] * len(self.stockUniverse)
         for position in positions:
@@ -343,7 +343,7 @@ class PaperTradingAlpaca:
         state[np.isinf(state)] = 0.0
 
         # print(len(self.stockUniverse))
-        return np.hstack([cash, stocks, price])
+        return np.hstack([cash, stocks, price, tech])
 
     def submitOrder(self, qty, stock, side, resp):
         if qty > 0:
