@@ -32,6 +32,7 @@ class StockTradingEnvStopLoss(gym.Env):
         shares_increment=1,
         discrete_actions=False,
         random_start=True,
+        patient=False
     ):
         price_ary = config["price_array"]
         ohlcv_ary = config["ohlcv_array"]
@@ -44,6 +45,7 @@ class StockTradingEnvStopLoss(gym.Env):
         self.turbulence_ary = turbulence_ary
         self.turbulence_threshold = turbulence_thresh
         self.random_start = random_start
+        self.patient = patient
 
         self.tech_ary = self.tech_ary * 2**-7
         self.turbulence_bool = (turbulence_ary > turbulence_thresh).astype(np.float32)
@@ -82,7 +84,7 @@ class StockTradingEnvStopLoss(gym.Env):
         self.daily_information_cols = daily_information_cols
 
         self.state_dim = (
-            1 + stock_dim + stock_dim * 1
+            1 + stock_dim +  self.price_ary.shape[1] + self.tech_ary.shape[1]
         )
 
         self.stock_dim = stock_dim
@@ -174,7 +176,7 @@ class StockTradingEnvStopLoss(gym.Env):
         #     + self.price_ary[self.day]
         # )
 
-        init_state = np.hstack([self.initial_capital, [0] * self.stock_dim, self.price_ary[self.day]])
+        init_state = np.hstack([self.initial_capital, [0] * self.stock_dim, self.price_ary[self.day], self.tech_ary[self.day]])
         self.state_memory.append(init_state)
 
         return init_state
@@ -361,7 +363,7 @@ class StockTradingEnvStopLoss(gym.Env):
         self.day += 1
 
         # Update State
-        state = np.hstack([coh, list(holdings_updated), self.price_ary[self.day]])
+        state = np.hstack([coh, list(holdings_updated), self.price_ary[self.day], self.tech_ary[self.day]])
         self.state_memory.append(state)
 
         return state, reward, False, {}

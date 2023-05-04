@@ -719,15 +719,16 @@ def train(
 ):
     # download data
     dp = DataProcessor(data_source, **kwargs)
-    # data = dp.download_data(ticker_list, start_date, end_date, time_interval)
-    # data = dp.clean_data(data)
-    # data = dp.add_technical_indicator(data, technical_indicator_list)
-    # if if_vix:
-    #     data = dp.add_vix(data)
-    # else:
-    #     data = dp.add_turbulence(data)
+    data = dp.download_data(ticker_list, start_date, end_date, time_interval)
+    data = dp.clean_data(data)
+    data = dp.add_technical_indicator(data, technical_indicator_list)
+    if if_vix:
+        data = dp.add_vix(data)
+        # TODO - replace vix for ratio between current value of the S&P / S&P mean average of 20 days 
+    else:
+        data = dp.add_turbulence(data)
 
-    data = pd.read_csv('data.csv')
+    # data = pd.read_csv("full_data.csv")
 
     dp.tech_indicator_list = technical_indicator_list
 

@@ -10,15 +10,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--data_key", help="data source api key")
 parser.add_argument("--data_secret", help="data source api secret")
 parser.add_argument("--data_url", help="data source api base url")
-parser.add_argument("--trading_key", help="trading api key")
-parser.add_argument("--trading_secret", help="trading api secret")
 parser.add_argument("--trading_url", help="trading api base url")
 args = parser.parse_args()
 DATA_API_KEY = args.data_key
 DATA_API_SECRET = args.data_secret
 DATA_API_BASE_URL = args.data_url
-TRADING_API_KEY = args.trading_key
-TRADING_API_SECRET = args.trading_secret
+TRADING_API_KEY = args.data_key
+TRADING_API_SECRET = args.data_secret
 TRADING_API_BASE_URL = args.trading_url
 
 print("DATA_API_KEY: ", DATA_API_KEY)
@@ -45,7 +43,7 @@ ERL_PARAMS = {
     "gamma": 0.985,
     "seed": 312,
     "net_dimension": [128, 64],
-    "target_step": 5000,
+    "target_step": 20_000,
     "eval_gap": 30,
     "eval_times": 1,
 }
@@ -77,65 +75,67 @@ print("TEST_END_DATE: ", TEST_END_DATE)
 print("TRAINFULL_START_DATE: ", TRAINFULL_START_DATE)
 print("TRAINFULL_END_DATE: ", TRAINFULL_END_DATE)
 
-# train(
-#     start_date=TRAIN_START_DATE,
-#     end_date=TRAIN_END_DATE,
-#     ticker_list=ticker_list,
-#     data_source="alpaca",
-#     time_interval="1Min",
-#     technical_indicator_list=INDICATORS,
-#     drl_lib="elegantrl",
-#     env=env,
-#     model_name="ppo",
-#     if_vix=True,
-#     API_KEY=DATA_API_KEY,
-#     API_SECRET=DATA_API_SECRET,
-#     API_BASE_URL=DATA_API_BASE_URL,
-#     erl_params=ERL_PARAMS,
-#     cwd="./papertrading_erl",  # current_working_dir
-#     break_step=1e5,
-# )
+INDICATORS = ["dma", "rsi_30", "macd", "close_13_sma", "close_55_sma", "cci_30"]
 
-# account_value_erl = test(
-#     start_date=TEST_START_DATE,
-#     end_date=TEST_END_DATE,
-#     ticker_list=ticker_list,
-#     data_source="alpaca",
-#     time_interval="1Min",
-#     technical_indicator_list=INDICATORS,
-#     drl_lib="elegantrl",
-#     env=env,
-#     model_name="ppo",
-#     if_vix=True,
-#     API_KEY=DATA_API_KEY,
-#     API_SECRET=DATA_API_SECRET,
-#     API_BASE_URL=DATA_API_BASE_URL,
-#     cwd="./papertrading_erl",
-#     net_dimension=ERL_PARAMS["net_dimension"],
-# )
+train(
+    start_date=TRAIN_START_DATE,
+    end_date=TRAIN_END_DATE,
+    ticker_list=ticker_list,
+    data_source="alpaca",
+    time_interval="1Min",
+    technical_indicator_list=INDICATORS,
+    drl_lib="elegantrl",
+    env=env,
+    model_name="ppo",
+    if_vix=True,
+    API_KEY=DATA_API_KEY,
+    API_SECRET=DATA_API_SECRET,
+    API_BASE_URL=DATA_API_BASE_URL,
+    erl_params=ERL_PARAMS,
+    cwd="./test_papertrading_erl",  # current_working_dir
+    break_step=100_000,
+)
 
-# train(
-#     start_date=TRAINFULL_START_DATE,  # After tuning well, retrain on the training and testing sets
-#     end_date=TRAINFULL_END_DATE,
-#     ticker_list=ticker_list,
-#     data_source="alpaca",
-#     time_interval="1Min",
-#     technical_indicator_list=INDICATORS,
-#     drl_lib="elegantrl",
-#     env=env,
-#     model_name="ppo",
-#     if_vix=True,
-#     API_KEY=DATA_API_KEY,
-#     API_SECRET=DATA_API_SECRET,
-#     API_BASE_URL=DATA_API_BASE_URL,
-#     erl_params=ERL_PARAMS,
-#     cwd="./papertrading_erl_retrain",
-#     break_step=2e5,
-# )
+account_value_erl = test(
+    start_date=TEST_START_DATE,
+    end_date=TEST_END_DATE,
+    ticker_list=ticker_list,
+    data_source="alpaca",
+    time_interval="1Min",
+    technical_indicator_list=INDICATORS,
+    drl_lib="elegantrl",
+    env=env,
+    model_name="ppo",
+    if_vix=True,
+    API_KEY=DATA_API_KEY,
+    API_SECRET=DATA_API_SECRET,
+    API_BASE_URL=DATA_API_BASE_URL,
+    cwd="./test_papertrading_erl",
+    net_dimension=ERL_PARAMS["net_dimension"],
+)
+
+train(
+    start_date=TRAINFULL_START_DATE,  # After tuning well, retrain on the training and testing sets
+    end_date=TRAINFULL_END_DATE,
+    ticker_list=ticker_list,
+    data_source="alpaca",
+    time_interval="1Min",
+    technical_indicator_list=INDICATORS,
+    drl_lib="elegantrl",
+    env=env,
+    model_name="ppo",
+    if_vix=True,
+    API_KEY=DATA_API_KEY,
+    API_SECRET=DATA_API_SECRET,
+    API_BASE_URL=DATA_API_BASE_URL,
+    erl_params=ERL_PARAMS,
+    cwd="./test_papertrading_erl",
+    break_step=2e5,
+)
 
 action_dim = len(DOW_30_TICKER)
 stock_dim = len(DOW_30_TICKER)
-state_dim = (1 + stock_dim + stock_dim * 1)  # Calculate the DRL state dimension manually for paper trading. amount + (turbulence, turbulence_bool) + (price, shares, cd (holding time)) * stock_dim + tech_dim
+state_dim = (1 + (2 * stock_dim) + (stock_dim * len(INDICATORS)))  # Calculate the DRL state dimension manually for paper trading. amount + (turbulence, turbulence_bool) + (price, shares, cd (holding time)) * stock_dim + tech_dim
 
 paper_trading_erl = PaperTradingAlpaca(
     ticker_list=DOW_30_TICKER,

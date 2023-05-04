@@ -50,6 +50,7 @@ class DataProcessor:
     def add_technical_indicator(self, df, tech_indicator_list) -> pd.DataFrame:
         self.tech_indicator_list = tech_indicator_list
         df = self.processor.add_technical_indicator(df, tech_indicator_list)
+        # TODO - add vwap
 
         return df
 
